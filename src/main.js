@@ -44,7 +44,7 @@ if (process.argv.length > 3) {
     // get the api_key and api_secret
     // this file should be on the base dir of the project
     // this file should be a flat (1 level) json file
-    var fileContent = fs.readFileSync(process.argv[3]);
+    var fileContent = fs.readFileSync(process.argv[3], "utf8");
     //console.log("" + fileContent);
     var jsonObj = JSON.parse(fileContent);
     apiKey = jsonObj.api_key;

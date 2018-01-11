@@ -1,0 +1,4 @@
+{
+    "rest": "https://api-public.sandbox.gdax.com",
+    "websocket": "wss://ws-feed-public.sandbox.gdax.com"
+}
