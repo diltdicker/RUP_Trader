@@ -13,6 +13,7 @@ const fs = require('fs');
 const ws = require('ws');
 const mkdirp = require('mkdirp');
 
+var subscribeFlag = 2;
 var subscribeFile = "./json/btc_ticker.json";
 var websocketFile = "./json/hosts_real.json";
 var subscribeFileData = fs.readFileSync(subscribeFile, "utf8");
@@ -52,11 +53,19 @@ var gdaxSocket = new ws(websocketFileData.websocket);
 
 gdaxSocket.on('open', function open() {
     gdaxSocket.send(subscribeFileData);
+    subscribeFlag = 2;
 });
 
 gdaxSocket.on('message', function incoming(data) {
-    data = JSON.parse(data);
-    var moddedData = data.price + "," + data.side + "," + data.time + "\n";
+    console.log('flag ' + subscribeFlag);
+    //console.log(data);
+    var jsonObj = JSON.parse(data);
+    //console.log(jsonObj);
+    var moddedData = jsonObj.price + "," + jsonObj.side + "," + jsonObj.time + "\n";
     console.log(moddedData);
-    appendCSV(moddedData);
+    if (subscribeFlag > 0) {
+        subscribeFlag = subscribeFlag - 1;
+    } else {
+        appendCSV(moddedData);
+    }
 });
