@@ -8,12 +8,22 @@
 
 const fs = require('fs');
 const ws = require('ws');
+const mkdirp = require('mkdirp');
 
 var currentDay = new Date();
+var gdaxSocket = new ws('wss://ws-feed-public.sandbox.gdax.com');
+
+gdaxSocket.on('open', function open() {
+    gdaxSocket.send('{"type": "subscribe","product_ids": ["ETH-USD","ETH-EUR"],"channels": ["level2","heartbeat",{"name": "ticker","product_ids": ["ETH-BTC","ETH-USD"]}]}');
+});
+
+gdaxSocket.on('message', function incoming(data) {
+    console.log(data);
+});
 //var dayString = (currentDay.getMonth() + " " + currentDay.getDay() + " " + currentDay.getYear());
 console.log(currentDay.getDate().toString());
 
-appendCSV('');
+//appendCSV('');
 
 console.log("done");
 
@@ -25,6 +35,7 @@ function appendCSV(data) {
         console.log("write");
     });
 }
+
 
 module.exports = {
 
