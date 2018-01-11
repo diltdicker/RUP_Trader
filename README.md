@@ -14,6 +14,7 @@ This project runs on __NodeJS__
 * express - https://www.npmjs.com/package/express
 * mkdirp - https://github.com/substack/node-mkdirp
 * forever-monitor - https://github.com/foreverjs/forever-monitor
+* forever - https://www.npmjs.com/package/forever
 
 ### GDAX API key
 To use this project you will need an api Key and an api Secret from Gdax (you will need to create an account).
