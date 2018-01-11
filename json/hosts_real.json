@@ -1,0 +1,4 @@
+{
+    "rest": "https://api.gdax.com",
+    "websocket": "wss://ws-feed.gdax.com"
+}

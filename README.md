@@ -12,11 +12,13 @@ This project runs on __NodeJS__
 ###### install individually
 * ws - https://www.npmjs.com/package/ws
 * express - https://www.npmjs.com/package/express
+* mkdirp - https://github.com/substack/node-mkdirp
 
 ### GDAX API key
-To use this project you will need an api Key and an api Secret from Gdax (you will need to create an account)
-[Generate API key](https://www.gdax.com/settings/api)
-Once you have generated an api key and secret place them in the _RUP_Trader_ directory in a file called _api_key.json_
+To use this project you will need an api Key and an api Secret from Gdax (you will need to create an account).
+[Generate API key](https://www.gdax.com/settings/api).
+
+Once you have generated an api key and secret place them in the _RUP_Trader_ directory in a file called _api_key.json_.
 The file format will need to be in this JSON format:
 `{
     "api_key": "key value goes here",
