@@ -1,0 +1,6 @@
+{
+    "method": "sma",
+    "timetype": "tick",
+    "value": 500,
+    "delay": 25
+}

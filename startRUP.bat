@@ -1,2 +1,2 @@
-node .\src\websocket.js
+node .\src\daemon.js
 pause
