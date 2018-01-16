@@ -22,7 +22,9 @@ To use this project you will need an api Key and an api Secret from Gdax (you wi
 
 Once you have generated an api key and secret place them in the _RUP_Trader_ directory in a file called _api_key.json_.
 The file format will need to be in this JSON format:
-`{
+```json
+{
     "api_key": "key value goes here",
     "api_secret": "secret value goes here"
-}`
+}
+```
