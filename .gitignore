@@ -9,3 +9,5 @@ package-lock.json
 node_modules/*
 csv/*
 logs/*
+err.log
+out.log
