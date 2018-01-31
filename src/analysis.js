@@ -1,5 +1,6 @@
 /*
-    Author Dillon Dickerson
+    @author Dillon Dickerson
+    Copyright Dillon Dickerson 2018
 */
 
 const readline = require('readline');
