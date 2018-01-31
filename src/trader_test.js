@@ -29,7 +29,7 @@ const readline = require('readline');
 const fs = require('fs');
 
 var algoFileName = "algo_ema.json";
-var csvFileName = '1-21-2018-DailyPriceHist.csv';//'old-data-1.csv';
+var csvFileName = '1-20-2018-DailyPriceHist.csv';//'old-data-1.csv';
 var algoFileData = fs.readFileSync('json/' + algoFileName);
 algoFileData = JSON.parse(algoFileData);
 
@@ -42,7 +42,7 @@ var highLength = 6;
 var lowLength = 4;
 var highPrices = Array();
 var lowPrices = Array();
-var period = 120;					// len value should be imported from JSON file
+var period = 220;					// len value should be imported from JSON file
 var readyToSell = false;			// needs to populate the EMA list to figure out the delta
 var SMATrigger = false;				// sma first then get use it as the initial EMA
 var weight = 2.0/(period + 1.0);
@@ -53,6 +53,8 @@ var sellThreshold = 0.5 * threshold;
 var buyprice = 0.0;
 var profit = 0.0;
 var fees = 0.0;
+var btc = 0.0;
+var profitList = new Array();
 
 var arr = [45, 34, 686, 999, 0, -201, 4389, 234, -483, 43, -12, 5];
 arr = sortList(arr, true);
@@ -155,24 +157,27 @@ function addNewPrice(price) {
 }
 
 function buy(price) {
+	fees += cashOnHand * 0.001;
 	if (cashOnHand >= 200.0 && false) {
 		coin = (200.0 / price);
 		cashOnHand -= 200.0;
 	} else {
 		coin = (cashOnHand / price);
+		btc += coin;
 		cashOnHand = 0.0;
 	}
 	buyprice = price;
 	readyToSell = true;
-	fees += 2.5;
 }
 
 function sell(price) {
 	cashOnHand += (coin * price);
 	profit += (price - buyprice) * coin;
+	profitList.push((price - buyprice) * coin);
+	btc += coin;
 	coin = 0.0;
 	readyToSell = false;
-	fees += 2.5;
+	fees += cashOnHand * 0.001;
 }
 
 const rl = readline.createInterface({
@@ -185,7 +190,7 @@ rl.on('line', function (line) {
 	var recordPrice = parseFloat(record[0]);
 	addNewPrice(recordPrice);
 	if (EMAList.length > 250) {
-		console.log(recordPrice + " : " + /*EMAList[0] + " : " + getAverage(highPrices) + " : " + getAverage(lowPrices) +*/ " : $" + cashOnHand + " : @" + coin + " : " + getDelta(EMAList.slice(0, EMADelta)) + " $$ " + profit + " fees: " + fees);
+		console.log(recordPrice + " : " + /*EMAList[0] + " : " + getAverage(highPrices) + " : " + getAverage(lowPrices) +*/ " : $" + cashOnHand + " : @" + coin + " : " + getDelta(EMAList.slice(0, EMADelta)) + " $$ " + profit + " fees: " + fees + " vol: " + btc + " ROI avg: " + getAverage(profitList));
 	} else {
 		//console.log(priceList.length);
 	}
