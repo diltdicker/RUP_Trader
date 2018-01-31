@@ -29,20 +29,21 @@ const readline = require('readline');
 const fs = require('fs');
 
 var algoFileName = "algo_ema.json";
-var csvFileName = '1-20-2018-DailyPriceHist.csv';//'old-data-1.csv';
+var csvFileName = /*'1-10-2018-DailyPriceHist.csv';/*/'old-data-1.csv';
 var algoFileData = fs.readFileSync('json/' + algoFileName);
 algoFileData = JSON.parse(algoFileData);
 
 var priceList = Array();
 var EMAList = Array();
-var EMADelta = 20;
+var SMAList = Array();
+var EMADelta = 100;
 var priceExtremeLength = 20;		// len value should be imported from JSON file
-var histLen = 80;
-var highLength = 6;
-var lowLength = 4;
+var histLen = 1500;
+var highLength = 25;
+var lowLength = 25;
 var highPrices = Array();
 var lowPrices = Array();
-var period = 220;					// len value should be imported from JSON file
+var period = 2200;					// len value should be imported from JSON file
 var readyToSell = false;			// needs to populate the EMA list to figure out the delta
 var SMATrigger = false;				// sma first then get use it as the initial EMA
 var weight = 2.0/(period + 1.0);
@@ -55,6 +56,11 @@ var profit = 0.0;
 var fees = 0.0;
 var btc = 0.0;
 var profitList = new Array();
+var index = 1;
+var EMAHitList = Array();
+var EMAHitFlag = false;
+var transBuy = 0.0;
+var transSold = 0.0;
 
 var arr = [45, 34, 686, 999, 0, -201, 4389, 234, -483, 43, -12, 5];
 arr = sortList(arr, true);
@@ -117,15 +123,18 @@ function getEMA(prevEMA, price, weight) {
 function addNewPrice(price) {
 	if (!SMATrigger) {
 		priceList.unshift(price);
+		SMAList.unshift(price);
 		if (priceList.length >= period) {
 			SMATrigger = true;
 			EMAList.unshift(getAverage(priceList));
 		}
 	} else {
 		priceList.unshift(price);
+		SMAList.unshift(price);
 		if (priceList.length > histLen) {
 			priceList = priceList.slice(0, histLen);
 		}
+		SMAList.pop();
 		EMAList.unshift(getEMA(EMAList[0], price, weight));
 		var sortedPrices = sortList(priceList.slice(), false);
 		highPrices = sortedPrices.slice(0, highLength);
@@ -136,19 +145,19 @@ function addNewPrice(price) {
 				if (getDelta(EMAList.slice(0, EMADelta)) < 0) {
 					var avg = getAverage(highPrices);
 					if (price >= avg - 1) {
-						sell(price);
+						//sell(price);
 					}
 				}
 				if (price <= buyprice - sellThreshold) {
-					sell(price);							// short sell
-					console.log("short sell buyprice: " + buyprice + " sellprice: " + price);
+					//sell(price);							// short sell
+					//console.log("short sell buyprice: " + buyprice + " sellprice: " + price);
 				}
 			} else {
 				if (getDelta(EMAList.slice(0, EMADelta)) > 0) {
 					var high = getAverage(highPrices);
 					var avg = getAverage(lowPrices);
 					if (price <= avg + 1 && (high - price) > 2*threshold) {
-						buy(price);
+						//buy(price);
 					}
 				}
 			}
@@ -157,27 +166,23 @@ function addNewPrice(price) {
 }
 
 function buy(price) {
-	fees += cashOnHand * 0.001;
-	if (cashOnHand >= 200.0 && false) {
-		coin = (200.0 / price);
-		cashOnHand -= 200.0;
-	} else {
-		coin = (cashOnHand / price);
-		btc += coin;
-		cashOnHand = 0.0;
-	}
 	buyprice = price;
+	coin = cashOnHand/price;
+	transBuy = price * coin;
+	fees += transBuy * 0.0025;
+	cashOnHand = 0.0;
 	readyToSell = true;
+	console.log("Buy order");
 }
 
 function sell(price) {
-	cashOnHand += (coin * price);
-	profit += (price - buyprice) * coin;
-	profitList.push((price - buyprice) * coin);
-	btc += coin;
+	transSold = price * coin;
+	fees += transSold * 0.0025;
+	profit += transSold - transBuy;
+	cashOnHand = transSold;
+	console.log("Transaction: buy:" + buyprice + " sold:" + price + " profit:" + (price - transBuy) + " ajusted profit: " + (transSold - transBuy) + " units: " + coin + " fees: " + fees);
 	coin = 0.0;
 	readyToSell = false;
-	fees += cashOnHand * 0.001;
 }
 
 const rl = readline.createInterface({
@@ -190,8 +195,54 @@ rl.on('line', function (line) {
 	var recordPrice = parseFloat(record[0]);
 	addNewPrice(recordPrice);
 	if (EMAList.length > 250) {
-		console.log(recordPrice + " : " + /*EMAList[0] + " : " + getAverage(highPrices) + " : " + getAverage(lowPrices) +*/ " : $" + cashOnHand + " : @" + coin + " : " + getDelta(EMAList.slice(0, EMADelta)) + " $$ " + profit + " fees: " + fees + " vol: " + btc + " ROI avg: " + getAverage(profitList));
+		//console.log(recordPrice + " : " + /*EMAList[0] + " : " + getAverage(highPrices) + " : " + getAverage(lowPrices) +*/ " : $" + cashOnHand + " : @" + coin + " : " + getDelta(EMAList.slice(0, EMADelta)) + " $$ " + profit + " fees: " + fees + " vol: " + btc + " ROI avg: " + getAverage(profitList));
+		if (recordPrice - 5 < EMAList[0] && EMAList[0] < recordPrice + 5) {
+			if (!EMAHitFlag) {
+				EMAHitList.unshift(recordPrice);
+				EMAHitFlag = true;
+			} else {
+				if (Math.abs(recordPrice - EMAHitList[0]) > 50) {
+					EMAHitList.unshift(recordPrice);
+					var recomend = "buy";
+					if (!readyToSell && getDelta(EMAList.slice(0, EMADelta)) > 0 && Math.abs(getAverage(highPrices) - recordPrice) > Math.abs(getAverage(lowPrices) - recordPrice)) {
+						buy(recordPrice);
+					} else if (readyToSell && getDelta(EMAList.slice(0, EMADelta)) < 0 && Math.abs(getAverage(highPrices) - recordPrice) < Math.abs(getAverage(lowPrices) - recordPrice)){
+						sell(recordPrice);
+					}
+					/*if (Math.abs(getAverage(highPrices) - recordPrice) > Math.abs(getAverage(lowPrices) - recordPrice)) {
+						recomend = "sell";
+						if (readyToSell && getDelta(EMAList.slice(0, EMADelta)) < 0) {
+							sell(recordPrice);
+						}
+					} else {
+						if (!readyToSell && getDelta(EMAList.slice(0, EMADelta))> 0 && (getAverage(highPrices) >= (recordPrice - getAverage(lowPrices)) * 3) ) {
+							buy(recordPrice);
+						}
+					}
+					if (readyToSell && recordPrice < buyprice - 125) {
+						//sell(recordPrice);
+						//console.log("short sell");
+					}*/
+					console.log(recordPrice + ", " + getAverage(highPrices) + ", " + getAverage(lowPrices) + ", " + recomend + ", profit:" + profit + ", delta: " + getDelta(EMAList.slice(0, EMADelta)) + ", margin est:" + (getAverage(highPrices) - getAverage(lowPrices)) + ", loss " + Math.abs(getAverage(lowPrices) - recordPrice) + ", gain " + Math.abs(getAverage(highPrices) - recordPrice) );
+				}
+			}
+		}
+
+		var output = "" + index + "," + recordPrice + "," + EMAList[0] + "," + getAverage(SMAList) + "," + getAverage(highPrices) + "," + getAverage(lowPrices) + "\n";
+		//appendCSV(output);
+		index++;
 	} else {
 		//console.log(priceList.length);
 	}
 });
+
+function appendCSV(data) {
+    fs.appendFile(('./csv/' + "analysis_data.csv"), data, "utf8", function(err) {
+        // do nothing
+        if(err) {
+            console.error(err);
+        } else {
+            //console.log("appened ./" + dayString + "DailyPriceHist.csv");
+        }
+    });
+}
