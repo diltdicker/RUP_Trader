@@ -29,13 +29,13 @@ const readline = require('readline');
 const fs = require('fs');
 
 var algoFileName = "algo_ema.json";
-var csvFileName = 'old-data-1.csv';
+var csvFileName = '1-20-2018-DailyPriceHist.csv';//'old-data-1.csv';
 var algoFileData = fs.readFileSync('json/' + algoFileName);
 algoFileData = JSON.parse(algoFileData);
 
 var priceList = Array();
 var EMAList = Array();
-var EMADelta = 25;
+var EMADelta = 20;
 var priceExtremeLength = 25;		// len value should be imported from JSON file
 var highPrices = Array();
 var lowPrices = Array();
@@ -45,6 +45,9 @@ var SMATrigger = false;				// sma first then get use it as the initial EMA
 var weight = 2.0/(period + 1.0);
 var cashOnHand = 200.0;
 var coin = 0.0;
+var threshold = 15;
+var buyprice = 0.0;
+var profit = 0.0;
 
 var arr = [45, 34, 686, 999, 0, -201, 4389, 234, -483, 43, -12, 5];
 arr = sortList(arr, true);
@@ -90,6 +93,15 @@ function getAverage(list) {
 	return (sum / (list.length));
 }
 
+/*
+	list: a smaller list (non sorted)
+	this is intended for EMAList to determine the delta of the EMA
+*/
+function getDelta(list) {
+	var delta = (list[list.length - 1] - list[0])/(list.length);
+	return delta;
+}
+
 function getEMA(prevEMA, price, weight) {
 	var nextEMA = (price * weight) + (((weight*(-1)) + 1) * prevEMA);
 	return nextEMA;
@@ -110,28 +122,47 @@ function addNewPrice(price) {
 		highPrices = sortedPrices.slice(0, priceExtremeLength);
 		lowPrices = sortedPrices.slice(sortedPrices.length - priceExtremeLength, sortedPrices.length);
 		//
-		if (readyToSell) {
-			var avg = getAverage(highPrices);
-			if (price > avg - 10) {
-				sell(price);
-			}
-		} else {
-			var avg = getAverage(lowPrices)
-			if (price < avg + 10) {
-				buy (price);
+		if (EMAList.length > period) {
+			if (readyToSell) {
+				if (getDelta(EMAList.slice(0, EMADelta)) > 0) {
+					var avg = getAverage(highPrices);
+					if (price >= avg - 1) {
+						sell(price);
+					}
+				} else {
+					if (price < buyprice - threshold) {
+						sell(price);							// short sell
+						console.log("short sell buyprice: " + buyprice + " sellprice: " + price);
+					}
+				}
+			} else {
+				if (getDelta(EMAList.slice(0, EMADelta)) > 0) {
+					var high = getAverage(highPrices);
+					var avg = getAverage(lowPrices);
+					if (price <= avg + 1 && (high - price) > 2.5*threshold) {
+						buy(price);
+					}
+				}
 			}
 		}
 	}
 }
 
 function buy(price) {
-	coin = (cashOnHand / price);
-	cashOnHand = 0.0;
+	if (cashOnHand >= 200.0) {
+		coin = (200.0 / price);
+		cashOnHand -= 200.0;
+	} else {
+		coin = (cashOnHand / price);
+		cashOnHand = 0.0;
+	}
+	buyprice = price;
 	readyToSell = true;
 }
 
 function sell(price) {
-	cashOnHand = (coin * price);
+	cashOnHand += (coin * price);
+	profit += (price - buyprice) * coin;
 	coin = 0.0;
 	readyToSell = false;
 }
@@ -145,9 +176,9 @@ rl.on('line', function (line) {
 	var record = line.split(",");
 	var recordPrice = parseFloat(record[0]);
 	addNewPrice(recordPrice);
-	if (SMATrigger) {
-		console.log(recordPrice + " : " + EMAList[0] + " : " + getAverage(highPrices) + " : " + getAverage(lowPrices) + " : $" + cashOnHand + " : @" + coin);
+	if (EMAList.length > 250) {
+		console.log(recordPrice + " : " + /*EMAList[0] + " : " + getAverage(highPrices) + " : " + getAverage(lowPrices) + " : $" +*/ cashOnHand + " : @" + coin + " : " + getDelta(EMAList.slice(0, EMADelta)) + " $$ " + profit);
 	} else {
-		console.log(priceList.length);
+		//console.log(priceList.length);
 	}
 });
