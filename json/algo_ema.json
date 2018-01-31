@@ -1,0 +1,5 @@
+{
+	"method": "ema",
+	"period": 250,
+	"history": 25
+}
